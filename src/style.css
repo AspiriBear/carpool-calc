@@ -77,3 +77,13 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* Mobile specific styles */
+@media (max-width: 600px) {
+  #app {
+    padding: 0 !important; /* Force remove all padding */
+    margin: 0 !important; /* Force remove all margin */
+    width: 100vw !important; /* Force width to viewport width */
+    box-sizing: border-box !important; /* Ensure correct box model calculation */
+  }
+}
