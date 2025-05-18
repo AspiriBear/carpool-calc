@@ -100,9 +100,13 @@ function calculateAndSetMargin() {
       // Ensure Input Area starts exactly after Info Bar with a small buffer
       inputAreaEl.style.top = `${infoBarEl.getBoundingClientRect().bottom + 1}px`; // Add 1px buffer
 
-      // Calculate total height for mobile list area margin
-      const totalHeight = headerEl.offsetHeight + infoBarEl.offsetHeight + inputAreaEl.offsetHeight;
-      listAreaMarginTop.value = `${totalHeight}px`;
+      // Use the bottom of the input area to determine the margin-top for the list
+      listAreaMarginTop.value = `${inputAreaEl.getBoundingClientRect().bottom}px`;
+
+      // Calculate and set the height of the list area
+      // 100vh - total height of fixed top elements - optional bottom buffer (e.g., for FAB)
+      const listHeight = window.innerHeight - inputAreaEl.getBoundingClientRect().bottom - 10; // Subtract a buffer for bottom
+      memberListAreaRef.value.style.height = `${listHeight}px`;
     } else {
       // For desktop sticky positioning
       // Ensure Info Bar starts exactly after Header
@@ -112,7 +116,7 @@ function calculateAndSetMargin() {
 
       // Calculate total height for desktop list area margin
       const totalHeight = headerEl.offsetHeight + infoBarEl.offsetHeight + inputAreaEl.offsetHeight;
-      listAreaMarginTop.value = `${totalHeight}px`;
+      listAreaMarginTop.value = `${totalHeight + 10}px`; // Add 10px buffer for separation
     }
   }
 }
@@ -510,7 +514,7 @@ textarea:focus {
 }
 .info-bar {
   max-width: 900px;
-  margin: 1.2em auto 0 auto;
+  /* margin handled by JS calculation and buffer */
   width: 100%;
   display: flex;
   align-items: center;
@@ -614,7 +618,7 @@ textarea:focus {
 }
 .input-area {
   max-width: 900px;
-  margin: 1.2em auto 0 auto;
+  /* margin handled by JS calculation */
   width: 100%;
   background: var(--bg-200);
   border-radius: 18px;
@@ -685,6 +689,8 @@ textarea:focus {
   display: flex;
   flex-direction: column;
   gap: 1.2em;
+  flex-grow: 1;
+  min-height: 0;
 }
 .member-info-card {
   background: var(--bg-200);
@@ -823,7 +829,6 @@ textarea:focus {
   .member-list-area {
     position: relative;
     margin-top: 280px;
-    height: calc(100vh - 280px - 90px);
     overflow-y: auto;
     padding-top: 0.7em;
     padding-bottom: 16px;
@@ -880,7 +885,7 @@ textarea:focus {
     background: var(--primary-100);
     background-clip: padding-box;
     color: #fff;
-    padding: 0.4em 0.5em; /* Keep padding */
+    padding: 0.5em 0.5em; /* Reduced vertical padding */
     display: flex; /* Re-add flex properties */
     flex-direction: column;
     align-items: center;
@@ -904,7 +909,7 @@ textarea:focus {
     background: rgba(235, 226, 205, 0.96);
     height: auto;
     min-height: 120px;
-    padding: 0.7em 0.5em 0.7em 0.5em;
+    padding: 0.5em 0.5em 0.5em 0.5em; /* Reduced vertical padding */
     margin: 0 !important; /* Force remove all margin */
     margin-top: 0 !important; /* Explicitly remove top margin */
   }
@@ -915,20 +920,20 @@ textarea:focus {
     display: flex !important;
     flex-direction: row;
     flex-wrap: wrap;
-    gap: 0.5em;
-    margin-bottom: 0.3em;
+    gap: 0.4em; /* Reduced gap */
+    margin-bottom: 0.2em; /* Reduced margin */
     width: 100%;
   }
   .input-group {
     flex: 1 1 48%;
     min-width: 0;
-    margin-bottom: 0.2em;
+    margin-bottom: 0.1em; /* Reduced margin */
   }
   .add-btn {
     width: 100%;
     min-width: 0;
     margin-left: 0;
-    margin-top: 0.8em;
+    margin-top: 0.5em; /* Reduced margin */
     box-sizing: border-box;
     padding: 0.8em 1.8em;
   }
@@ -983,7 +988,6 @@ textarea:focus {
   .member-list-area {
     position: relative;
     margin-top: 280px;
-    height: calc(100vh - 280px - 90px);
     overflow-y: auto;
     padding-top: 0.7em;
     padding-bottom: 0 !important; /* Remove padding-bottom on mobile */
@@ -1217,7 +1221,6 @@ textarea:focus {
   .member-list-area {
     position: relative;
     margin-top: 280px;
-    height: calc(100vh - v-bind(listAreaMarginTop) - 90px);
     overflow-y: auto;
     padding-top: 0.7em;
     padding-bottom: 0 !important; /* Remove padding-bottom on mobile */
@@ -1294,7 +1297,6 @@ textarea:focus {
   .member-list-area {
     position: relative;
     margin-top: 280px;
-    height: calc(100vh - v-bind(listAreaMarginTop) - 90px);
     overflow-y: auto;
     padding-top: 0.7em;
     padding-bottom: 0 !important; /* Remove padding-bottom on mobile */
