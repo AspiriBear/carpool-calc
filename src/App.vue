@@ -437,12 +437,50 @@ watch(showWelcome, newValue => {
               <tbody>
                 <tr v-for="item in member.items" :key="item.id">
                   <td data-label="物品名称" class="item-name-col">
-                    <span class="item-name-desktop">{{ item.name }}</span>
-                    <span class="item-name-mobile"><i class="fa-solid fa-box"></i></span>
+                    <input v-model="item.name" type="text" placeholder="物品名称" class="item-input item-name-input" />
                   </td>
-                  <td data-label="原价(日元)">{{ item.originalPriceJPY }}</td>
-                  <td data-label="数量">{{ item.quantity }}</td>
-                  <td data-label="折扣">{{ discountOptions.find(opt => opt.value === item.discountType)?.label }}</td>
+                  <td data-label="原价(日元)">
+                    <input
+                      v-model.number="item.originalPriceJPY"
+                      type="number"
+                      min="0"
+                      placeholder="原价(日元)"
+                      class="item-input item-price-input"
+                    />
+                  </td>
+                  <td data-label="数量">
+                    <input
+                      v-model.number="item.quantity"
+                      type="number"
+                      min="1"
+                      placeholder="数量"
+                      class="item-input item-quantity-input"
+                    />
+                  </td>
+                  <td data-label="折扣">
+                    <select v-model="item.discountType" class="item-input item-discount-select">
+                      <option v-for="opt in discountOptions" :value="opt.value">{{ opt.label }}</option>
+                    </select>
+                    <div v-if="item.discountType === 'custom-percentage'" class="custom-input-container">
+                      <input
+                        v-model.number="item.customDiscountPercent"
+                        type="number"
+                        min="0"
+                        max="100"
+                        placeholder="打几折 (如 88)"
+                        class="item-input item-custom-discount-percent"
+                      />
+                    </div>
+                    <div v-if="item.discountType === 'custom'" class="custom-input-container">
+                      <input
+                        v-model.number="item.customFinalPriceJPY"
+                        type="number"
+                        min="0"
+                        placeholder="折后日元价"
+                        class="item-input item-custom-price-jpy"
+                      />
+                    </div>
+                  </td>
                   <td data-label="折后价(日元)">{{ getDiscountedItemPriceJPY(item).toFixed(2) }}</td>
                   <td data-label="折后单价(￥)">{{ getItemUnitPriceCNY(item).toFixed(2) }}</td>
                   <td data-label="操作">
@@ -940,7 +978,7 @@ textarea:focus {
     display: block; /* Make table elements block-level */
     width: 100%; /* Full width */
     border: none;
-    text-align: right;
+    text-align: center; /* Center align data in mobile table cells */
     padding: 0.4em 0;
     position: relative;
     padding-left: 40%;
@@ -990,6 +1028,83 @@ textarea:focus {
     gap: 0.5em;
     margin-bottom: 0.3em;
     width: 100%;
+  }
+
+  /* Ensure input groups take up half width in mobile rows */
+  .input-row-mobile .input-group {
+    width: calc(50% - 0.25em); /* Account for gap */
+    box-sizing: border-box;
+    flex-shrink: 0; /* Prevent input groups from shrinking */
+  }
+
+  /* The last row is handled by inline flex styles on its children */
+  /* Remove any explicit width calculation for last row elements here */
+
+  /* Force inputs/selects inside mobile input rows to be full width of their container */
+  .input-row-mobile input,
+  .input-row-mobile select {
+    width: 100% !important; /* Force width to 100% */
+    max-width: 100% !important; /* Force max-width to 100% */
+    min-width: 0 !important; /* Allow shrinking below intrinsic width */
+    box-sizing: border-box;
+  }
+
+  .item-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-100);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 0.5em;
+    /* Mobile table styles */
+    display: block; /* Ensure container is block on mobile */
+  }
+
+  .item-table thead {
+    display: none; /* Hide table header on mobile */
+  }
+  .item-table tbody {
+    display: block; /* Ensure tbody is block on mobile */
+  }
+  .item-table tr {
+    display: block; /* Make table elements block-level */
+    width: 100%; /* Full width */
+    margin-bottom: 1em; /* Space between items */
+    border: 1px solid var(--primary-100); /* Add border for separation */
+    border-radius: 8px;
+    padding: 0.8em 0.5em; /* Add padding within the block */
+  }
+  .item-table td {
+    display: block; /* Make table elements block-level */
+    width: 100%; /* Full width */
+    border: none;
+    text-align: center; /* Center align data in mobile table cells */
+    padding: 0.4em 0;
+    position: relative;
+    padding-left: 40%;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+  .item-table td:before {
+    content: attr(data-label);
+    position: absolute;
+    left: 0.5em;
+    width: 35%;
+    padding-right: 1em;
+    white-space: nowrap;
+    font-weight: bold;
+    color: var(--text-200);
+    box-sizing: border-box;
+    text-align: left;
+    display: block; /* Ensure pseudo-element is block on mobile */
+  }
+  .item-table td:last-child {
+    text-align: center;
+    padding-left: 0.5em;
+  }
+  .item-table td:last-child:before {
+    content: none;
+    display: none; /* Ensure pseudo-element is hidden for last child on mobile */
   }
 }
 
@@ -1220,7 +1335,7 @@ textarea:focus {
   }
   .item-table td {
     border: none;
-    text-align: right;
+    text-align: center;
     padding: 0.4em 0;
     position: relative;
     padding-left: 40%;
@@ -1307,6 +1422,89 @@ textarea:focus {
     width: auto;
     word-break: normal;
     overflow-wrap: normal;
+  }
+}
+
+/* Add styles for input/select within table cells */
+.item-table td input,
+.item-table td select {
+  /* Basic styling for appearance */
+  padding: 0.3em 0.5em;
+  border: 1px solid var(--primary-100);
+  border-radius: 4px;
+  background: var(--bg-100);
+  color: var(--text-100);
+  font-size: 0.95em;
+  box-sizing: border-box; /* Include padding and border in element's total width and height */
+  width: 100%; /* Default to 100% width */
+}
+
+/* Specific width adjustments or overrides if needed */
+.item-table td .item-name-input {
+  /* Adjust if item name input needs different width */
+}
+
+.item-table td .item-price-input,
+.item-table td .item-quantity-input {
+  /* Adjust width for narrower columns like price and quantity */
+  max-width: 80px; /* Example max-width, adjust as needed */
+  text-align: center;
+}
+
+.item-table td .item-discount-select {
+  /* Adjust if discount select needs specific width */
+}
+
+.item-table td .custom-input-container input {
+  /* Styles for the conditional custom discount/price inputs */
+  margin-top: 0.3em; /* Space above the custom input */
+  max-width: 120px; /* Adjust max-width as needed */
+  display: block; /* Ensure it takes its own line below the select */
+  margin-left: auto;
+  margin-right: auto; /* Center the block element */
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .item-table td input,
+  .item-table td select {
+    /* Adjust styles for mobile block layout */
+    width: 100%; /* Should still take full width of block td */
+    padding: 0.5em 0.5em; /* Adjust padding for mobile */
+    text-align: center !important; /* Center align text within input/select on mobile, use !important */
+  }
+
+  .item-table td .item-price-input,
+  .item-table td .item-quantity-input,
+  .item-table td .custom-input-container input {
+    /* Mobile adjustments for specific inputs if needed */
+    max-width: 100%; /* On mobile, allow them to be full width of td */
+    text-align: center; /* Ensure content within these inputs is also centered */
+  }
+}
+
+@media (min-width: 901px) {
+  .item-table td input,
+  .item-table td select {
+    /* Adjust styles for desktop table-cell layout */
+    width: 100%; /* Should take full width of table cell */
+    padding: 0.3em 0.5em; /* Adjust padding for desktop */
+  }
+
+  .item-table td .item-price-input,
+  .item-table td .item-quantity-input {
+    /* Desktop adjustments for narrower columns */
+    max-width: 80px; /* Keep a max-width for narrower columns */
+    display: inline-block; /* Allow them to be inline */
+    text-align: center;
+  }
+  .item-table td .custom-input-container input {
+    /* Desktop styles for the conditional custom discount/price inputs */
+    margin-top: 0.3em; /* Space above the custom input */
+    max-width: 120px; /* Adjust max-width as needed */
+    display: inline-block; /* Should be inline block on desktop */
+    margin-left: 0;
+    margin-right: 0;
   }
 }
 </style>
