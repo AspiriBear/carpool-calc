@@ -37,11 +37,13 @@ const newItem = ref({
   quantity: 1,
   discountType: '85-percent',
   customFinalPriceJPY: '',
+  customDiscountPercent: '',
 });
 
 const discountOptions = [
   { value: '85-percent', label: '85折' },
   { value: 'no-discount', label: '不打折' },
+  { value: 'custom-percentage', label: '自定义打几折' },
   { value: 'custom', label: '自定义折后价' },
 ];
 
@@ -49,10 +51,15 @@ const memberListAreaRef = ref(null);
 const listAreaMarginTop = ref('280px'); // Initial estimation
 
 function getDiscountedItemPriceJPY(item) {
-  if (item.discountType === '85-percent') return item.originalPriceJPY * 0.85 * item.quantity;
-  if (item.discountType === 'no-discount') return item.originalPriceJPY * item.quantity;
-  if (item.discountType === 'custom') return item.customFinalPriceJPY * item.quantity;
-  return 0;
+  let discountedPrice = 0;
+  if (item.discountType === '85-percent') discountedPrice = item.originalPriceJPY * 0.85 * item.quantity;
+  else if (item.discountType === 'no-discount') discountedPrice = item.originalPriceJPY * item.quantity;
+  else if (item.discountType === 'custom-percentage') {
+    const discountFactor = item.customDiscountPercent / 100;
+    discountedPrice = item.originalPriceJPY * discountFactor * item.quantity;
+  } else if (item.discountType === 'custom') discountedPrice = item.customFinalPriceJPY * item.quantity;
+
+  return Math.ceil(discountedPrice);
 }
 function getItemUnitPriceCNY(item) {
   return (getDiscountedItemPriceJPY(item) / item.quantity) * exchangeRate.value;
@@ -94,7 +101,8 @@ function calculateAndSetMargin() {
     const inputAreaHeight = inputAreaEl.offsetHeight;
 
     // For mobile fixed positioning
-    if (window.innerWidth <= 600) {
+    if (window.innerWidth <= 900) {
+      // Changed breakpoint to 900px
       // Ensure Info Bar starts exactly after Header with a small buffer
       infoBarEl.style.top = `${headerEl.getBoundingClientRect().bottom + 1}px`; // Add 1px buffer
       // Ensure Input Area starts exactly after Info Bar with a small buffer
@@ -102,11 +110,6 @@ function calculateAndSetMargin() {
 
       // Use the bottom of the input area to determine the margin-top for the list
       listAreaMarginTop.value = `${inputAreaEl.getBoundingClientRect().bottom}px`;
-
-      // Calculate and set the height of the list area
-      // 100vh - total height of fixed top elements - optional bottom buffer (e.g., for FAB)
-      const listHeight = window.innerHeight - inputAreaEl.getBoundingClientRect().bottom - 10; // Subtract a buffer for bottom
-      memberListAreaRef.value.style.height = `${listHeight}px`;
     } else {
       // For desktop sticky positioning
       // Ensure Info Bar starts exactly after Header
@@ -114,9 +117,8 @@ function calculateAndSetMargin() {
       // Ensure Input Area starts exactly after Info Bar
       inputAreaEl.style.top = `${headerHeight + infoBarHeight}px`;
 
-      // Calculate total height for desktop list area margin
-      const totalHeight = headerEl.offsetHeight + infoBarEl.offsetHeight + inputAreaEl.offsetHeight;
-      listAreaMarginTop.value = `${totalHeight + 10}px`; // Add 10px buffer for separation
+      // On desktop, rely on normal document flow and input area margin-bottom
+      listAreaMarginTop.value = '0px';
     }
   }
 }
@@ -131,9 +133,18 @@ function addItem() {
     quantity: Number(newItem.value.quantity),
     discountType: newItem.value.discountType,
     customFinalPriceJPY: newItem.value.discountType === 'custom' ? Number(newItem.value.customFinalPriceJPY) : 0,
+    customDiscountPercent:
+      newItem.value.discountType === 'custom-percentage' ? Number(newItem.value.customDiscountPercent) : '',
   });
   // 清空输入栏
-  newItem.value = { name: '', originalPriceJPY: '', quantity: 1, discountType: '85-percent', customFinalPriceJPY: '' };
+  newItem.value = {
+    name: '',
+    originalPriceJPY: '',
+    quantity: 1,
+    discountType: '85-percent',
+    customFinalPriceJPY: '',
+    customDiscountPercent: '',
+  };
 }
 function removeItem(itemId) {
   const idx = items.value.findIndex(i => i.id === itemId);
@@ -159,7 +170,9 @@ async function handleExportXLSX() {
         item.name,
         item.originalPriceJPY,
         item.quantity,
-        discountOptions.find(opt => opt.value === item.discountType)?.label,
+        item.discountType === 'custom-percentage'
+          ? `打${item.customDiscountPercent}折`
+          : discountOptions.find(opt => opt.value === item.discountType)?.label,
         getDiscountedItemPriceJPY(item).toFixed(2),
         getItemUnitPriceCNY(item).toFixed(2),
       ]);
@@ -345,6 +358,15 @@ watch(showWelcome, newValue => {
               <option v-for="opt in discountOptions" :value="opt.value">{{ opt.label }}</option>
             </select>
           </div>
+          <div v-if="newItem.discountType === 'custom-percentage'" style="margin-top: 0.3em">
+            <input
+              v-model.number="newItem.customDiscountPercent"
+              type="number"
+              min="0"
+              max="100"
+              placeholder="打几折 (如 88)"
+            />
+          </div>
           <div class="input-group" v-if="newItem.discountType === 'custom'">
             <label>自定义折后价</label>
             <input v-model.number="newItem.customFinalPriceJPY" type="number" min="0" placeholder="折后日元价" />
@@ -378,8 +400,14 @@ watch(showWelcome, newValue => {
             <select v-model="newItem.discountType">
               <option v-for="opt in discountOptions" :value="opt.value">{{ opt.label }}</option>
             </select>
-            <div v-if="newItem.discountType === 'custom'" style="margin-top: 0.3em">
-              <input v-model.number="newItem.customFinalPriceJPY" type="number" min="0" placeholder="折后日元价" />
+            <div v-if="newItem.discountType === 'custom-percentage'" style="margin-top: 0.3em">
+              <input
+                v-model.number="newItem.customDiscountPercent"
+                type="number"
+                min="0"
+                max="100"
+                placeholder="打几折 (如 88)"
+              />
             </div>
           </div>
           <button class="add-btn" @click="addItem" style="flex: 1"><i class="fa-solid fa-plus"></i> 新增物品</button>
@@ -475,7 +503,6 @@ watch(showWelcome, newValue => {
 html,
 body {
   width: 100%;
-  height: 100%;
   margin: 0;
   padding: 0;
   background: #f8f6ed;
@@ -624,6 +651,7 @@ textarea:focus {
   border-radius: 18px;
   box-shadow: 0 2px 8px #c2baa6cc;
   padding: 1.2em 2em 0.7em 2em;
+  margin-bottom: 20px; /* Add space below input area */
 }
 .input-row {
   display: flex;
@@ -691,6 +719,9 @@ textarea:focus {
   gap: 1.2em;
   flex-grow: 1;
   min-height: 0;
+  align-items: flex-start;
+  justify-content: flex-start;
+  margin-top: 10px; /* Add small fixed margin for separation */
 }
 .member-info-card {
   background: var(--bg-200);
@@ -700,6 +731,7 @@ textarea:focus {
   display: flex;
   flex-direction: column;
   gap: 0.7em;
+  margin: 0 0 1.2em 0; /* Remove auto margins, keep bottom margin */
 }
 .member-title {
   font-weight: bold;
@@ -744,21 +776,7 @@ textarea:focus {
 }
 
 .export-bar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
-  background: var(--primary-100);
-  border-radius: 0 0 18px 18px;
-  box-shadow: 0 -2px 8px #c2baa6cc;
-  padding: 1.2em 0;
-  display: flex;
-  justify-content: center;
-  gap: 2em;
-  z-index: 100;
+  display: none; /* Hide the desktop export bar */
 }
 .export-btn {
   background: var(--accent-100);
@@ -837,228 +855,15 @@ textarea:focus {
     display: flex;
     flex-direction: column;
     gap: 1.2em;
-    align-items: center;
   }
   .member-info-card {
     margin: 0 auto 1.2em auto;
     width: 100%; /* Use 100% width of parent */
-    padding: 0.8em 0.5em; /* Further reduced horizontal padding for mobile */
+    padding: 1em 0.5em; /* Further reduced horizontal padding for mobile */
   }
 }
 
-@media (max-width: 600px) {
-  .carpool-app {
-    padding: 0 !important; /* Keep vertical padding */
-    min-height: 100vh;
-  }
-  .main-page {
-    width: 100%; /* Ensure main-page takes full width on mobile */
-    padding: 0 0.5em; /* Keep horizontal padding for content inside main-page */
-    box-sizing: border-box;
-  }
-  .main-header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 101;
-    border-radius: 0;
-    max-width: 100vw;
-    box-shadow: 0 2px 8px #c2baa6cc;
-    height: 56px;
-    min-height: 56px;
-    background: var(--bg-200);
-    padding: 0.2em 0.5em;
-    display: flex;
-    align-items: center;
-  }
-  .info-bar {
-    position: fixed;
-    left: 0;
-    right: 0;
-    z-index: 102;
-    border-radius: 0;
-    max-width: 100vw;
-    box-shadow: 0 2px 8px #c2baa6cc;
-    height: 66px;
-    min-height: 66px;
-    background: var(--primary-100);
-    background-clip: padding-box;
-    color: #fff;
-    padding: 0.5em 0.5em; /* Reduced vertical padding */
-    display: flex; /* Re-add flex properties */
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.3em;
-    width: 100%; /* Ensure full width */
-    margin: 0 auto; /* Center horizontally */
-    margin-bottom: 0.8em; /* Add space below info bar */
-  }
-  .input-area {
-    display: flex;
-    flex-direction: column;
-    gap: 0.2em;
-    position: fixed;
-    left: 0;
-    right: 0;
-    z-index: 103;
-    max-width: 100vw;
-    border-radius: 0;
-    box-shadow: 0 2px 8px #c2baa6cc;
-    background: rgba(235, 226, 205, 0.96);
-    height: auto;
-    min-height: 120px;
-    padding: 0.5em 0.5em 0.5em 0.5em; /* Reduced vertical padding */
-    margin: 0 !important; /* Force remove all margin */
-    margin-top: 0 !important; /* Explicitly remove top margin */
-  }
-  .input-row-desktop {
-    display: none !important; /* Hide desktop input row in mobile */
-  }
-  .input-row-mobile {
-    display: flex !important;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 0.4em; /* Reduced gap */
-    margin-bottom: 0.2em; /* Reduced margin */
-    width: 100%;
-  }
-  .input-group {
-    flex: 1 1 48%;
-    min-width: 0;
-    margin-bottom: 0.1em; /* Reduced margin */
-  }
-  .add-btn {
-    width: 100%;
-    min-width: 0;
-    margin-left: 0;
-    margin-top: 0.5em; /* Reduced margin */
-    box-sizing: border-box;
-    padding: 0.8em 1.8em;
-  }
-  .export-bar {
-    display: none !important;
-  }
-  .fab-export-group {
-    position: fixed;
-    right: 16px;
-    bottom: 80px;
-    z-index: 999;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    align-items: flex-end; /* Align items to the right */
-  }
-  .fab-btn {
-    width: 54px;
-    height: 54px;
-    border-radius: 50%;
-    background: var(--accent-100);
-    color: #fff;
-    border: none;
-    box-shadow: 0 2px 8px #c2baa6cc;
-    font-size: 1.6em;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.2s;
-  }
-  .fab-btn:active {
-    background: var(--accent-200);
-  }
-  .fab-xlsx {
-    background: #1d6f42;
-  }
-  .fab-pdf {
-    background: #b71c1c;
-  }
-  .fab-png {
-    background: #f18f01;
-  }
-  .fab-main {
-    background: var(--primary-200);
-  }
-  .fab-options {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin-bottom: 16px; /* Space between options and main button */
-  }
-  .member-list-area {
-    position: relative;
-    margin-top: 280px;
-    overflow-y: auto;
-    padding-top: 0.7em;
-    padding-bottom: 0 !important; /* Remove padding-bottom on mobile */
-    max-width: 100vw;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 1.2em;
-    align-items: center;
-  }
-  .member-info-card {
-    margin: 0 auto 1.2em auto;
-    width: 100%; /* Use 100% width of parent */
-    padding: 0.8em 0.5em; /* Further reduced horizontal padding for mobile */
-  }
-  .member-block {
-    overflow-x: auto; /* Enable horizontal scrolling for the table */
-    padding: 0.5em 0.8em; /* Adjusted padding for mobile */
-  }
-  .item-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: var(--bg-100);
-    border-radius: 8px;
-    overflow: hidden;
-    margin-bottom: 0.5em;
-  }
-  /* Table as blocks on mobile */
-  .item-table,
-  .item-table thead,
-  .item-table tbody,
-  .item-table tr {
-    display: block;
-    width: 100%;
-  }
-  .item-table thead {
-    display: none; /* Hide table header */
-  }
-  .item-table tr {
-    margin-bottom: 0.8em; /* Add space between item blocks */
-    border: 1px solid var(--primary-100); /* Add border for clarity */
-    border-radius: 8px;
-    background: var(--bg-100);
-    padding: 0.8em;
-    display: flex; /* Use flex for layout inside tr */
-    flex-direction: column; /* Stack table cells vertically */
-    gap: 0.5em; /* Space between cells */
-  }
-  .item-table td {
-    border: none; /* Remove cell borders */
-    text-align: left; /* Align text left */
-    padding: 0.2em 0; /* Adjust padding */
-    display: flex; /* Use flex to align label and value */
-    justify-content: space-between; /* Space between label and value */
-    align-items: center;
-  }
-  /* Add labels to table cells using data attributes or span if needed */
-  .item-table td::before {
-    content: attr(data-label) ':'; /* Use data-label for column titles */
-    font-weight: bold;
-    color: var(--text-200);
-    margin-right: 1em;
-    flex-shrink: 0; /* Prevent label from shrinking */
-  }
-  /* Adjust specific column styles if needed */
-  .item-name-col {
-    font-weight: bold;
-    color: var(--primary-300);
-  }
-}
-@media (min-width: 601px) {
+@media (min-width: 901px) {
   .input-row-desktop {
     display: flex !important;
   }
@@ -1080,17 +885,17 @@ textarea:focus {
   }
   .member-list-area {
     position: relative;
-    margin-top: 362px;
-    height: calc(100vh - 362px - 90px);
+    margin-top: 0; /* Remove hardcoded margin-top */
+    height: auto; /* Remove fixed height */
     overflow-y: auto;
     padding-top: 0.7em;
     padding-bottom: 16px;
     max-width: 900px;
-    width: 100vw;
+    width: 100%; /* Use 100% of parent width */
     display: flex;
     flex-direction: column;
     gap: 1.2em;
-    align-items: center;
+    align-items: flex-start; /* Align items to the start */
   }
   .member-info-card {
     margin: 0 auto 1.2em auto;
@@ -1174,7 +979,7 @@ textarea:focus {
   position: fixed;
   background: transparent;
 }
-@media (min-width: 601px) {
+@media (min-width: 901px) {
   .main-header {
     position: sticky;
     top: 0;
@@ -1190,17 +995,17 @@ textarea:focus {
   }
   .member-list-area {
     position: relative;
-    margin-top: 362px;
-    height: calc(100vh - 362px - 90px);
+    margin-top: 0; /* Remove hardcoded margin-top */
+    height: auto; /* Remove fixed height */
     overflow-y: auto;
     padding-top: 0.7em;
     padding-bottom: 16px;
     max-width: 900px;
-    width: 100vw;
+    width: 100%; /* Use 100% of parent width */
     display: flex;
     flex-direction: column;
     gap: 1.2em;
-    align-items: center;
+    align-items: flex-start; /* Align items to the start */
   }
   .member-info-card {
     margin: 0 auto 1.2em auto;
@@ -1208,7 +1013,7 @@ textarea:focus {
     max-width: 900px;
   }
 }
-@media (max-width: 600px) {
+@media (max-width: 900px) {
   .fixed-top-area {
     position: fixed;
     width: 100vw;
@@ -1229,7 +1034,6 @@ textarea:focus {
     display: flex;
     flex-direction: column;
     gap: 1.2em;
-    align-items: center;
   }
   .member-info-card {
     margin: 0 auto 1.2em auto;
@@ -1256,7 +1060,7 @@ textarea:focus {
   display: none;
 }
 
-@media (min-width: 601px) {
+@media (min-width: 901px) {
   .input-row-desktop {
     display: flex !important;
   }
@@ -1265,7 +1069,7 @@ textarea:focus {
   }
   /* ... existing desktop styles ... */
 }
-@media (max-width: 600px) {
+@media (max-width: 900px) {
   .input-row-desktop {
     display: none !important; /* Ensure desktop is hidden on mobile */
   }
@@ -1284,7 +1088,7 @@ textarea:focus {
   display: none; /* Hide by default */
 }
 
-@media (max-width: 600px) {
+@media (max-width: 900px) {
   .fixed-top-area {
     position: fixed;
     width: 100vw;
@@ -1305,7 +1109,6 @@ textarea:focus {
     display: flex;
     flex-direction: column;
     gap: 1.2em;
-    align-items: center;
   }
   .member-info-card {
     margin: 0 auto 1.2em auto;
@@ -1332,7 +1135,23 @@ textarea:focus {
     display: flex; /* Show on mobile */
     flex-direction: column;
     gap: 16px;
-    align-items: flex-end; /* Align items to the right */
   }
+}
+
+@media (min-width: 901px) {
+  .fab-export-group {
+    display: flex !important; /* Show on desktop */
+    position: fixed; /* Ensure fixed position */
+    right: 32px; /* Adjust position for desktop */
+    bottom: 32px; /* Adjust position for desktop */
+    z-index: 999; /* Ensure it's on top */
+    flex-direction: column; /* Stack buttons vertically */
+    gap: 16px; /* Space between buttons */
+  }
+}
+
+/* Main FAB for toggling options */
+.fab-main {
+  background: var(--accent-100); /* Accent color is orange/brownish - should be more prominent */
 }
 </style>
