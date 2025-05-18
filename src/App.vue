@@ -100,16 +100,15 @@ function calculateAndSetMargin() {
     const infoBarHeight = infoBarEl.offsetHeight;
     const inputAreaHeight = inputAreaEl.offsetHeight;
 
-    // For mobile fixed positioning
+    // For fixed positioning elements (Header, Info Bar, Input Area) on mobile/smaller screens
     if (window.innerWidth <= 900) {
-      // Changed breakpoint to 900px
       // Ensure Info Bar starts exactly after Header with a small buffer
       infoBarEl.style.top = `${headerEl.getBoundingClientRect().bottom + 1}px`; // Add 1px buffer
       // Ensure Input Area starts exactly after Info Bar with a small buffer
       inputAreaEl.style.top = `${infoBarEl.getBoundingClientRect().bottom + 1}px`; // Add 1px buffer
 
-      // Use the bottom of the input area to determine the margin-top for the list
-      listAreaMarginTop.value = `${inputAreaEl.getBoundingClientRect().bottom}px`;
+      // On mobile, set a small fixed margin-top for the list area
+      listAreaMarginTop.value = '20px'; // Set a small fixed margin
     } else {
       // For desktop sticky positioning
       // Ensure Info Bar starts exactly after Header
@@ -522,6 +521,53 @@ textarea:focus {
   background: #fffbe9;
   transition: box-shadow 0.2s, border-color 0.2s;
 }
+
+/* 点缀星星装饰 */
+.star-deco {
+  position: fixed;
+  color: #f7d774;
+  opacity: 0.7;
+  pointer-events: none;
+  z-index: 20;
+  filter: drop-shadow(0 2px 4px #fff6c6cc);
+}
+.star-deco-1 {
+  left: 2vw;
+  top: 2vh;
+  font-size: 1.8em;
+  opacity: 0.6;
+  transform: rotate(-15deg);
+}
+.star-deco-2 {
+  right: 4vw;
+  top: 8vh;
+  font-size: 2.2em;
+  opacity: 0.8;
+  transform: rotate(10deg);
+}
+.star-deco-3 {
+  left: 8vw;
+  bottom: 6vh;
+  font-size: 1.3em;
+  opacity: 0.5;
+  transform: rotate(20deg);
+}
+.star-deco-4 {
+  right: 10vw;
+  bottom: 4vh;
+  font-size: 2.5em;
+  opacity: 0.7;
+  color: #ffe9a7;
+  transform: rotate(-8deg);
+}
+.star-deco-5 {
+  left: 50vw;
+  bottom: 2vh;
+  font-size: 1.1em;
+  opacity: 0.4;
+  color: #f7d774;
+  transform: rotate(12deg);
+}
 </style>
 
 <style scoped>
@@ -569,10 +615,10 @@ textarea:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
+  background: var(--bg-100);
 }
 .welcome-card {
-  background: rgba(235, 226, 205, 0.92);
+  background: var(--bg-200);
   border-radius: 18px;
   box-shadow: 0 2px 16px #c2baa6cc;
   padding: 2.5em 2.5em 2em 2.5em;
@@ -651,7 +697,7 @@ textarea:focus {
   border-radius: 18px;
   box-shadow: 0 2px 8px #c2baa6cc;
   padding: 1.2em 2em 0.7em 2em;
-  margin-bottom: 20px; /* Add space below input area */
+  /* margin-bottom handled by media query */
 }
 .input-row {
   display: flex;
@@ -838,18 +884,18 @@ textarea:focus {
   /* Item name column display adjustment for mobile */
   .item-name-label-desktop,
   .item-name-desktop {
-    display: none;
+    display: none !important;
   }
   .item-name-label-mobile,
   .item-name-mobile {
-    display: inline;
+    display: inline !important;
   }
   .member-list-area {
     position: relative;
     margin-top: 280px;
     overflow-y: auto;
     padding-top: 0.7em;
-    padding-bottom: 16px;
+    padding-bottom: 0 !important; /* Remove padding-bottom on mobile */
     max-width: 100vw;
     width: 100%;
     display: flex;
@@ -861,93 +907,195 @@ textarea:focus {
     width: 100%; /* Use 100% width of parent */
     padding: 1em 0.5em; /* Further reduced horizontal padding for mobile */
   }
+  .member-block {
+    overflow-x: hidden; /* Hide horizontal scrolling on mobile as layout changes */
+    padding: 0.5em; /* Adjusted padding for mobile */
+  }
+  .item-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-100);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 0.5em;
+    /* Mobile table styles */
+    display: block; /* Ensure container is block on mobile */
+  }
+
+  .item-table thead {
+    display: none; /* Hide table header on mobile */
+  }
+  .item-table tbody {
+    display: block; /* Ensure tbody is block on mobile */
+  }
+  .item-table tr {
+    display: block; /* Make table elements block-level */
+    width: 100%; /* Full width */
+    margin-bottom: 1em; /* Space between items */
+    border: 1px solid var(--primary-100); /* Add border for separation */
+    border-radius: 8px;
+    padding: 0.8em 0.5em; /* Add padding within the block */
+  }
+  .item-table td {
+    display: block; /* Make table elements block-level */
+    width: 100%; /* Full width */
+    border: none;
+    text-align: right;
+    padding: 0.4em 0;
+    position: relative;
+    padding-left: 40%;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+  .item-table td:before {
+    content: attr(data-label);
+    position: absolute;
+    left: 0.5em;
+    width: 35%;
+    padding-right: 1em;
+    white-space: nowrap;
+    font-weight: bold;
+    color: var(--text-200);
+    box-sizing: border-box;
+    text-align: left;
+    display: block; /* Ensure pseudo-element is block on mobile */
+  }
+  .item-table td:last-child {
+    text-align: center;
+    padding-left: 0.5em;
+  }
+  .item-table td:last-child:before {
+    content: none;
+    display: none; /* Ensure pseudo-element is hidden for last child on mobile */
+  }
+
+  .fab-export-group {
+    position: fixed;
+    right: 16px;
+    bottom: 80px;
+    z-index: 999;
+    display: flex; /* Show on mobile */
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* Mobile specific styles */
+  .input-row-desktop {
+    display: none !important;
+  }
+  .input-row-mobile {
+    display: flex !important;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.5em;
+    margin-bottom: 0.3em;
+    width: 100%;
+  }
 }
 
 @media (min-width: 901px) {
+  .fab-export-group {
+    display: flex !important;
+    position: fixed;
+    right: 32px;
+    bottom: 32px;
+    z-index: 999;
+    flex-direction: column;
+    gap: 16px;
+  }
+  /* Desktop table styles */
+  .item-table {
+    display: table !important; /* Increased specificity */
+    width: 100%; /* Table should take full width of its container */
+    border-collapse: collapse; /* Ensure borders are collapsed */
+    background: var(--bg-100);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 0.5em;
+  }
+  .item-table thead {
+    display: table-header-group !important; /* Increased specificity */
+  }
+  .item-table tbody {
+    display: table-row-group !important; /* Increased specificity */
+  }
+  .item-table tr {
+    display: table-row !important; /* Increased specificity */
+    margin-bottom: 0; /* Remove mobile margin */
+    border: none; /* Remove mobile border */
+    padding: 0; /* Remove mobile padding */
+  }
+  .item-table th,
+  .item-table td {
+    display: table-cell !important; /* Increased specificity */
+    border: 1px solid var(--primary-100); /* Restore cell borders */
+    text-align: center; /* Restore center alignment */
+    padding: 0.4em 0.7em; /* Restore padding */
+    position: static; /* Reset position from mobile styles */
+    word-break: normal; /* Prevent breaking from mobile style */
+    overflow-wrap: normal; /* Prevent wrapping from mobile style */
+    width: auto !important; /* Ensure width is auto with high specificity */
+  }
+
+  /* Ensure mobile-specific pseudo-element is hidden on desktop */
+  .item-table td:before {
+    content: none !important; /* Increased specificity */
+    display: none !important; /* Increased specificity */
+  }
+
+  /* Ensure mobile-specific item name labels are hidden on desktop */
+  .item-name-label-mobile,
+  .item-name-mobile {
+    display: none !important; /* Increased specificity */
+  }
+  /* Ensure desktop-specific item name labels are shown on desktop */
+  .item-name-label-desktop,
+  .item-name-desktop {
+    display: inline !important; /* Increased specificity */
+  }
+
+  /* Add margin-bottom for desktop input area */
+  .input-area {
+    margin-bottom: 20px;
+  }
+
+  /* Desktop specific styles for input rows */
   .input-row-desktop {
     display: flex !important;
   }
   .input-row-mobile {
     display: none !important;
   }
-  .main-header {
-    position: sticky;
-    top: 0;
-    z-index: 101;
-  }
-  .info-bar {
-    position: sticky;
-    z-index: 102;
-  }
-  .input-area {
-    position: sticky;
-    z-index: 103;
-  }
+
+  /* Adjust member list area and card for desktop layout */
   .member-list-area {
     position: relative;
-    margin-top: 0; /* Remove hardcoded margin-top */
-    height: auto; /* Remove fixed height */
+    margin-top: 0;
+    height: auto;
     overflow-y: auto;
     padding-top: 0.7em;
     padding-bottom: 16px;
     max-width: 900px;
-    width: 100%; /* Use 100% of parent width */
-    display: flex;
-    flex-direction: column;
+    width: 100%;
+    /* Ensure no flex properties interfere */
+    display: block;
+    flex-direction: initial;
+    align-items: initial;
     gap: 1.2em;
-    align-items: flex-start; /* Align items to the start */
   }
+
   .member-info-card {
     margin: 0 auto 1.2em auto;
     width: 98vw;
     max-width: 900px;
+    /* Ensure card takes full width within its container */
+    width: 100%;
   }
 }
-/* 点缀星星装饰 */
-.star-deco {
-  position: fixed;
-  color: #f7d774;
-  opacity: 0.7;
-  pointer-events: none;
-  z-index: 20;
-  filter: drop-shadow(0 2px 4px #fff6c6cc);
-}
-.star-deco-1 {
-  left: 2vw;
-  top: 2vh;
-  font-size: 1.8em;
-  opacity: 0.6;
-  transform: rotate(-15deg);
-}
-.star-deco-2 {
-  right: 4vw;
-  top: 8vh;
-  font-size: 2.2em;
-  opacity: 0.8;
-  transform: rotate(10deg);
-}
-.star-deco-3 {
-  left: 8vw;
-  bottom: 6vh;
-  font-size: 1.3em;
-  opacity: 0.5;
-  transform: rotate(20deg);
-}
-.star-deco-4 {
-  right: 10vw;
-  bottom: 4vh;
-  font-size: 2.5em;
-  opacity: 0.7;
-  color: #ffe9a7;
-  transform: rotate(-8deg);
-}
-.star-deco-5 {
-  left: 50vw;
-  bottom: 2vh;
-  font-size: 1.1em;
-  opacity: 0.4;
-  color: #f7d774;
-  transform: rotate(12deg);
+
+/* Main FAB for toggling options */
+.fab-main {
+  background: var(--accent-100); /* Accent color is orange/brownish - should be more prominent */
 }
 
 .welcome-page {
@@ -995,17 +1143,17 @@ textarea:focus {
   }
   .member-list-area {
     position: relative;
-    margin-top: 0; /* Remove hardcoded margin-top */
-    height: auto; /* Remove fixed height */
+    margin-top: 0;
+    height: auto;
     overflow-y: auto;
     padding-top: 0.7em;
     padding-bottom: 16px;
     max-width: 900px;
-    width: 100%; /* Use 100% of parent width */
+    width: 100%;
     display: flex;
     flex-direction: column;
     gap: 1.2em;
-    align-items: flex-start; /* Align items to the start */
+    align-items: flex-start;
   }
   .member-info-card {
     margin: 0 auto 1.2em auto;
@@ -1028,7 +1176,7 @@ textarea:focus {
     margin-top: 280px;
     overflow-y: auto;
     padding-top: 0.7em;
-    padding-bottom: 0 !important; /* Remove padding-bottom on mobile */
+    padding-bottom: 0 !important;
     max-width: 100vw;
     width: 100%;
     display: flex;
@@ -1037,12 +1185,12 @@ textarea:focus {
   }
   .member-info-card {
     margin: 0 auto 1.2em auto;
-    width: 100%; /* Use 100% width of parent */
-    padding: 1em 0.5em; /* Further reduced horizontal padding for mobile */
+    width: 100%;
+    padding: 1em 0.5em;
   }
   .member-block {
-    overflow-x: auto; /* Enable horizontal scrolling for the table */
-    padding: 0.5em 0.8em; /* Adjusted padding for mobile */
+    overflow-x: hidden;
+    padding: 0.5em;
   }
   .item-table {
     width: 100%;
@@ -1052,106 +1200,113 @@ textarea:focus {
     overflow: hidden;
     margin-bottom: 0.5em;
   }
-}
 
-/* Default hide both, show specific one in media queries */
-.input-row-desktop,
-.input-row-mobile {
-  display: none;
-}
-
-@media (min-width: 901px) {
-  .input-row-desktop {
-    display: flex !important;
+  /* Mobile table styles */
+  .item-table thead {
+    display: none;
   }
-  .input-row-mobile {
+  .item-table,
+  .item-table tbody,
+  .item-table tr,
+  .item-table td {
+    display: block;
+    width: 100%;
+  }
+  .item-table tr {
+    margin-bottom: 1em;
+    border: 1px solid var(--primary-100);
+    border-radius: 8px;
+    padding: 0.8em 0.5em;
+  }
+  .item-table td {
+    border: none;
+    text-align: right;
+    padding: 0.4em 0;
+    position: relative;
+    padding-left: 40%;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+  .item-table td:before {
+    content: attr(data-label);
+    position: absolute;
+    left: 0.5em;
+    width: 35%;
+    padding-right: 1em;
+    white-space: nowrap;
+    font-weight: bold;
+    color: var(--text-200);
+    box-sizing: border-box;
+    text-align: left;
+  }
+  .item-table td:last-child {
+    text-align: center;
+    padding-left: 0.5em;
+  }
+  .item-table td:last-child:before {
+    content: none;
+  }
+
+  .fab-export-group {
+    position: fixed;
+    right: 16px;
+    bottom: 80px;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* Mobile specific styles */
+  .input-row-desktop {
     display: none !important;
   }
-  /* ... existing desktop styles ... */
-}
-@media (max-width: 900px) {
-  .input-row-desktop {
-    display: none !important; /* Ensure desktop is hidden on mobile */
-  }
   .input-row-mobile {
-    display: flex !important; /* Ensure mobile is shown on mobile */
+    display: flex !important;
     flex-direction: row;
     flex-wrap: wrap;
     gap: 0.5em;
     margin-bottom: 0.3em;
     width: 100%;
   }
-  /* ... existing mobile styles ... */
-}
-
-.fab-export-group {
-  display: none; /* Hide by default */
-}
-
-@media (max-width: 900px) {
-  .fixed-top-area {
-    position: fixed;
-    width: 100vw;
-    left: 0;
-    right: 0;
-    top: 0;
-    z-index: 100;
-    background: transparent;
-  }
-  .member-list-area {
-    position: relative;
-    margin-top: 280px;
-    overflow-y: auto;
-    padding-top: 0.7em;
-    padding-bottom: 0 !important; /* Remove padding-bottom on mobile */
-    max-width: 100vw;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 1.2em;
-  }
-  .member-info-card {
-    margin: 0 auto 1.2em auto;
-    width: 100%; /* Use 100% width of parent */
-    padding: 1em 0.5em; /* Further reduced horizontal padding for mobile */
-  }
-  .member-block {
-    overflow-x: auto; /* Enable horizontal scrolling for the table */
-    padding: 0.5em 0.8em; /* Adjusted padding for mobile */
-  }
-  .item-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: var(--bg-100);
-    border-radius: 8px;
-    overflow: hidden;
-    margin-bottom: 0.5em;
-  }
-  .fab-export-group {
-    position: fixed;
-    right: 16px;
-    bottom: 80px;
-    z-index: 999;
-    display: flex; /* Show on mobile */
-    flex-direction: column;
-    gap: 16px;
-  }
 }
 
 @media (min-width: 901px) {
   .fab-export-group {
-    display: flex !important; /* Show on desktop */
-    position: fixed; /* Ensure fixed position */
-    right: 32px; /* Adjust position for desktop */
-    bottom: 32px; /* Adjust position for desktop */
-    z-index: 999; /* Ensure it's on top */
-    flex-direction: column; /* Stack buttons vertically */
-    gap: 16px; /* Space between buttons */
+    display: flex !important;
+    position: fixed;
+    right: 32px;
+    bottom: 32px;
+    z-index: 999;
+    flex-direction: column;
+    gap: 16px;
   }
-}
-
-/* Main FAB for toggling options */
-.fab-main {
-  background: var(--accent-100); /* Accent color is orange/brownish - should be more prominent */
+  /* Revert table styles for desktop */
+  .item-table thead {
+    display: table-header-group;
+  }
+  .item-table,
+  .item-table tbody,
+  .item-table tr,
+  .item-table td {
+    display: table;
+    width: 100%;
+  }
+  .item-table tr {
+    margin-bottom: 0;
+    border: none;
+    padding: 0;
+  }
+  .item-table td {
+    display: table-cell;
+    border: 1px solid var(--primary-100);
+    text-align: center;
+    padding: 0.4em 0.7em;
+    position: static;
+    padding-left: 0.7em;
+    width: auto;
+    word-break: normal;
+    overflow-wrap: normal;
+  }
 }
 </style>
